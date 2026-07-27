@@ -1,5 +1,6 @@
 import { store, type AppId, type WindowState, type Evidence, type State } from "../store";
 import { resolveUrl, PASTES, WHOIS_DB, type Paste } from "./sites";
+import { sfx } from "../os/sound";
 import type { Bash } from "just-bash/browser";
 
 // ---- bash bridge (set once terminal mounts) ----
@@ -156,20 +157,24 @@ export function searchPaste(query: string): Paste | null {
 export function addTrace(n: number) {
   // proxychain (if owned) passively dampens the noise you generate
   if (n > 0 && store.state.tools["proxychain"]?.owned) n = Math.ceil(n * 0.5);
+  const prev = store.state.trace;
   store.set((s) => ({ trace: Math.min(100, s.trace + n), traceArmed: n > 0 ? true : s.traceArmed }));
   const t = store.state.trace;
   if (t >= 50 && !store.state.flags.traceWarned) {
     store.set((s) => ({ flags: { ...s.flags, traceWarned: true } }));
     store.notify("⚠ trace at 50% — you are being followed");
+    sfx.alert();
     pushEmail({
       id: "rival-warn", from: "??? <relay@ghost>", subject: "i see you",
       body: "sloppy. drop the connection or i drop a dime on you.\n\n— a friend",
     });
   }
+  if (t >= 80 && prev < 80) { store.notify("⚠ trace at 80% — you are nearly burned"); sfx.alert(); }
   if (t >= 100) traceComplete();
 }
 function traceComplete() {
   store.notify("⛔ TRACE COMPLETE — emergency disconnect");
+  sfx.alarm();
   if (store.state.connection) store.set((s) => ({
     hosts: { ...s.hosts, [s.connection!]: { ...s.hosts[s.connection!], compromised: false } },
   }));
@@ -237,7 +242,9 @@ function findHost(key: string) {
 }
 
 // ---------- Connect / mount ----------
-export async function connect(hostKey: string, user?: string, pass?: string): Promise<string> {
+// stealth=true (used by pivot) halves the trace this connection generates.
+export async function connect(hostKey: string, user?: string, pass?: string, stealth = false): Promise<string> {
+  const m = (n: number) => (stealth ? Math.ceil(n * 0.5) : n);
   const host = findHost(hostKey);
   if (!host) return `connect: cannot resolve '${hostKey}'`;
   if (!host.discovered) return `connect: '${hostKey}' not discovered — scan first.`;
@@ -250,20 +257,41 @@ export async function connect(hostKey: string, user?: string, pass?: string): Pr
     if (!user || !pass)
       return `connect: ${host.hostname} requires login.  usage: connect ${hostKey} <user> <pass>\n(find credentials in files, pastes, or with hashcrack/packetdump)`;
     if (user !== host.access.user || pass !== host.access.pass) {
-      addTrace(12);
+      addTrace(m(12));
       return `connect: ${host.hostname}: access denied for '${user}' — failed login logged (+trace).`;
     }
     store.set((s) => ({ hosts: { ...s.hosts, [host.id]: { ...host, compromised: true } } }));
     store.notify(`login accepted on ${host.hostname}`);
   }
-  addTrace(8);
+  addTrace(m(8));
   store.set((s) => ({
     connection: host.id,
-    hosts: { ...s.hosts, [host.id]: { ...host, discovered: true } },
+    // read from current state so we don't clobber the compromised flag just set above
+    hosts: { ...s.hosts, [host.id]: { ...s.hosts[host.id], discovered: true } },
   }));
   await mountHost(host.id);
   store.notify(`connected to ${host.hostname}`);
   return `connected to ${host.hostname}.\nremote files mounted at /mnt/${host.id} — use ls, cat, grep, find.`;
+}
+
+// Lateral movement: reach a neighbour *through* the host you're already on.
+// Only works from a compromised foothold that links to the target — quieter than
+// a direct connect (stealth), and it auto-reveals the target the way you'd see it
+// from inside the network.
+export async function pivot(hostKey: string, user?: string, pass?: string): Promise<string> {
+  const fromId = store.state.connection;
+  if (!fromId) return "pivot: connect to a foothold host first, then pivot to a neighbour.";
+  const src = store.state.hosts[fromId];
+  if (!src.compromised) return `pivot: you don't have a foothold on ${src.hostname} yet.`;
+  const host = findHost(hostKey);
+  if (!host) return `pivot: cannot resolve '${hostKey}'`;
+  if (!src.links.includes(host.id))
+    return `pivot: ${host.hostname} isn't reachable from ${src.hostname}. scan ${src.hostname} to see its neighbours.`;
+  // you can see a linked host from inside — reveal it, then tunnel in quietly.
+  if (!host.discovered) store.set((s) => ({ hosts: { ...s.hosts, [host.id]: { ...s.hosts[host.id], discovered: true } } }));
+  store.notify(`pivoting ${src.hostname} -> ${host.hostname}`);
+  const res = await connect(host.id, user, pass, true);
+  return `[via ${src.hostname}] ` + res;
 }
 
 async function mountHost(id: string) {
@@ -372,6 +400,7 @@ export function hashcrack(hash?: string): string {
 export function grantTool(id: string) {
   store.set((s) => ({ tools: { ...s.tools, [id]: { ...s.tools[id], owned: true } } }));
   store.notify(`tool acquired: ${store.state.tools[id]?.name}`);
+  sfx.reward();
 }
 export function buyTool(id: string): string {
   const t = store.state.tools[id];
@@ -468,6 +497,7 @@ export function pushEmail(e: { id: string; from: string; subject: string; body: 
   if (store.state.emails.some((m) => m.id === e.id)) return;
   store.set((s) => ({ emails: [...s.emails, { ...e, read: false, at: s.emails.length }] }));
   store.notify(`new mail: ${e.subject}`);
+  sfx.mail();
 }
 export function readEmail(id: string) {
   store.set((s) => ({ emails: s.emails.map((m) => (m.id === id ? { ...m, read: true } : m)) }));

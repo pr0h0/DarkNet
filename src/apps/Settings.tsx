@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { useStore } from "../store";
 import { setTheme, setMode } from "../game/engine";
 import { resetSave } from "../store";
+import { soundOn, setSoundOn, sfx } from "../os/sound";
 
 const THEMES = ["midnight", "amber", "ice", "hazard"];
 const MODES: { id: "story" | "operator" | "blackout"; label: string; desc: string }[] = [
@@ -12,6 +14,7 @@ const MODES: { id: "story" | "operator" | "blackout"; label: string; desc: strin
 export function SettingsApp() {
   const theme = useStore((s) => s.theme);
   const mode = useStore((s) => s.mode);
+  const [snd, setSnd] = useState(soundOn());
   return (
     <div className="pad scroll settings">
       <div className="board-head">SETTINGS</div>
@@ -27,6 +30,12 @@ export function SettingsApp() {
           <b>{m.label}</b> <span className="muted small">{m.desc}</span>
         </label>
       ))}
+      <h4>Sound</h4>
+      <label className={"mode-row" + (snd ? " on" : "")}
+        onClick={() => { const n = !snd; setSoundOn(n); setSnd(n); if (n) sfx.reward(); }}>
+        <b>{snd ? "On" : "Off"}</b> <span className="muted small">mail pings, trace alerts, and cues</span>
+      </label>
+
       <h4>Save</h4>
       <p className="muted small">progress autosaves to this browser (IndexedDB).</p>
       <button className="danger" onClick={() => { if (confirm("Wipe all progress and restart?")) resetSave(); }}>reset game</button>

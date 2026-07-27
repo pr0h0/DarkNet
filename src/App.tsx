@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { store, loadSave } from "./store";
 import { initBash } from "./term/bash";
 import { openApp } from "./game/engine";
+import { startAmbient, stopAmbient } from "./game/ambient";
 import { Desktop } from "./os/Desktop";
 
 const BOOT = [
@@ -66,8 +67,9 @@ export function App() {
         openApp("contracts");
       }
       setReady(true);
+      startAmbient();
     })();
-    return () => { alive = false; };
+    return () => { alive = false; stopAmbient(); };
   }, []);
 
   if (!ready) {

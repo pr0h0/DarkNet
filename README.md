@@ -26,6 +26,13 @@ Unix-like shell (pipes, globs, `grep`, `find`, redirection, loops) to play with.
 - ⌨️ **Real terminal** — powered by [`just-bash`](https://www.npmjs.com/package/just-bash)
   and [`xterm.js`](https://xtermjs.org/): multi-tab, command history, tab-completion,
   full line editing, and ~20 custom game commands alongside standard Unix tools.
+  `hashcrack` and `decrypt` run a work bar that scales with the target's strength
+  (buy the `rainbow` cracker to blow through it).
+- 🕸️ **Lateral movement** — `pivot` through a compromised foothold into a
+  neighbouring host; quieter than a direct `connect`, the way real intrusions move.
+- 🔊 **Sound & atmosphere** — subtle synthesized cues for new mail, trace
+  thresholds, and getting burned (toggle in Settings). The world also has a life
+  of its own — ambient chatter arrives while you work.
 - 🌐 **In-game browser** — multiple tabs that keep their state, bookmarks,
   back/forward, rendered fictional sites, login forms, a paste-search engine, a
   whois lookup, a contract board, and a tool market.

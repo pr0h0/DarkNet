@@ -49,6 +49,7 @@ function cmds() {
     defineCommand("scan", async (a) => ok(E.scan(a[0]))),
     defineCommand("probe", async (a) => ok(E.probe(a[0]))),
     defineCommand("connect", async (a) => a[0] ? ok(await E.connect(a[0], a[1], a[2])) : err("usage: connect <host> [user] [pass]")),
+    defineCommand("pivot", async (a) => a[0] ? ok(await E.pivot(a[0], a[1], a[2])) : err("usage: pivot <neighbour> [user] [pass]  (tunnel through your current host)")),
     defineCommand("disconnect", async () => ok(await E.disconnect())),
     defineCommand("hashcrack", async (a) => ok(E.hashcrack(a[0]))),
     defineCommand("download", async (a) => a[0] ? ok(await E.download(a[0])) : err("usage: download <path>")),

@@ -98,6 +98,8 @@ ok(store.state.money === beforeBuy - 250, "proxychain cost 250");
 const tBefore = store.state.trace;
 E.scan("helios-build-01"); // noisy action, now dampened by proxychain
 ok(store.state.trace - tBefore <= 3, "proxychain halves scan noise");
+console.log("  buy:", E.buyTool("rainbow"));
+ok(store.state.tools["rainbow"].owned, "rainbow (faster cracker) purchased");
 
 // --- Endgame: Signal Loss (needs GhostRelay, unlocked by cold-storage) ---
 ok(store.state.contracts["signal-loss"].status === "available", "signal-loss unlocked by cold-storage");
@@ -132,8 +134,10 @@ ok(notes.includes("m3ridian-db") && notes.includes("kestrel"), "staging notes le
 // 5. pivot: scan reveals db + vault
 E.scan("meridian-staging");
 ok(store.state.hosts["meridian-db"].discovered && store.state.hosts["meridian-vault"].discovered, "scan reveals db + vault");
-// 6. into the database -> required evidence
-await E.connect("meridian-db", "svc", "m3ridian-db");
+// 6. into the database -> required evidence (via lateral movement from staging)
+ok(/isn't reachable|foothold/.test(await E.pivot("helios-vault")), "pivot rejects a non-neighbour host");
+const pv = await E.pivot("meridian-db", "svc", "m3ridian-db");
+ok(store.state.connection === "meridian-db" && /via meridian-staging/.test(pv), "pivot tunnels staging -> db");
 await E.pinEvidence("/mnt/meridian-db/var/lib/db/customers.sample.csv");
 ok(store.state.evidence.some((e) => e.id === "meridian-customers"), "customer sample pinned (required)");
 // 7. optional bonus: dbdump (buy tool first) + vault memo

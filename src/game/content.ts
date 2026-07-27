@@ -110,6 +110,8 @@ HX-4480  press line  "telemetry fault" narrative  approved:r.vance
     services: [{ port: 80, name: "http" }, { port: 22, name: "ssh" }],
     files: {
       "/var/www/index.html": "<h1>OWNED BY m0ngrel</h1> your show is mine now.\n",
+      "/var/www/style.css": "body{background:#111;color:#eee;font-family:monospace}\n",
+      "/var/www/episodes/ep-101.md": "# Ep 101: late night frequencies\nguest: DJ Harlow. runtime 58m.\n",
       "/var/log/access.log": `192.0.2.9 - - "GET /episodes" 200
 203.0.113.88 - - "GET / " 200
 45.77.13.6 - - "GET /admin" 401
@@ -117,6 +119,8 @@ HX-4480  press line  "telemetry fault" narrative  approved:r.vance
 45.77.13.6 - - "PUT /var/www/index.html (handle: m0ngrel)" 200
 192.0.2.9 - - "GET /rss" 200
 `,
+      "/var/log/cron.log": "0 3 * * * backup ran ok\n0 3 * * * backup ran ok\n",
+      "/etc/hostname": "loudhaus-web\n",
     },
     notes: "podcast host, recently defaced",
   }),
@@ -128,6 +132,9 @@ HX-4480  press line  "telemetry fault" narrative  approved:r.vance
     services: [{ port: 21, name: "ftp" }, { port: 873, name: "rsync" }],
     files: {
       "/share/readme.txt": "internal file drop. do NOT expose externally (again).\n",
+      "/share/hr/holiday-rota.csv": "name,week\nA. Kerr,32\nB. Lund,33\n",
+      "/share/hr/parking.txt": "bay 4 is reserved for the director. stop taking it.\n",
+      "/share/it/backup.log": "nightly rsync ok\nnightly rsync ok\nnightly rsync ok\n",
       "/share/invoices.csv": `id,vendor,amount,memo
 1001,OfficeCo,1200,supplies
 1002,SHELL-ALPHA,89000,OFFSHORE TRANSFER ghost invoice
@@ -178,6 +185,9 @@ note: payout from "vance" to bury the helios leak.
   board vault: 10.30.0.50, archive key is "kestrel"
 compliance must NOT see the vault memo.`,
       "/home/jpoole/.bash_history": "ssh svc@10.30.0.40\nscp customers.csv .\nrm -rf logs\n",
+      "/home/jpoole/todo.txt": "- fix the staging banner\n- reply to compliance (later)\n- lunch\n",
+      "/var/www/stage/index.html": "<h1>Meridian Trust — STAGING</h1><p>do not index</p>\n",
+      "/etc/motd": "meridian staging — non-production. yes, really.\n",
     },
     notes: "dev staging box — credentials reused from prod",
   }),
@@ -232,6 +242,9 @@ Legal advises a quiet settlement is cheaper than the regulator's fine. — CFO`)
       "/home/ops/handoff.txt": `manifest is in the cache box (10.50.0.9), file is encrypted.
 archive key: "tailwind". DO NOT leave this here.
 the boss's real ledger lives on core (10.50.0.40) behind a bl-share lock.`,
+      "/home/ops/shift-notes.txt": "night crew: forklift 2 is down again. call maint.\n",
+      "/var/spool/relay/queue.log": "msg relayed ok\nmsg relayed ok\nmsg relayed ok\n",
+      "/etc/motd": "northwind ops relay — internal use only\n",
     },
     notes: "smuggling comms relay",
   }),
@@ -359,6 +372,9 @@ every thread you pulled ends here. this is the whole machine.`,
       "/etc/app/config.yml": `db: ops / h0llowdb @ 10.90.0.20
 cold_wallet_backup: /share/cold-wallet.enc @ 10.90.0.30  key: "frostbite"
 # TODO rotate before the "exit" -- founders`,
+      "/srv/api/routes.js": "app.get('/health', (_,res)=>res.send('ok'))\n",
+      "/var/log/api/access.log": "GET /health 200\nGET /health 200\nGET /price 200\n",
+      "/etc/motd": "coinhollow api — to the moon\n",
     },
     notes: "exchange api/admin box",
   }),
@@ -485,6 +501,7 @@ export const TOOLS: Tool[] = [
   { id: "forensic", name: "forensic", desc: "Recover deleted/hidden files on a connected host (bonus evidence).", noise: 2, price: 400, owned: false },
   { id: "packetdump", name: "packetdump", desc: "Sniff a connected network to reveal a neighbour's credentials.", noise: 6, price: 350, owned: false },
   { id: "dbdump", name: "dbdump", desc: "Dump a full database service to a file (bonus evidence).", noise: 10, price: 500, owned: false },
+  { id: "rainbow", name: "rainbow", desc: "Precomputed tables + GPU rig — hashcrack and decrypt finish almost instantly.", noise: 0, price: 450, owned: false },
   // mission-reward exploits (earned, not for sale)
   { id: "webmap", name: "webmap", desc: "Crawl a site and surface unlinked pages and hidden hosts.", noise: 4, owned: false },
   { id: "orbitkey", name: "OrbitKey", desc: "Fictional implant that opens outdated orb-smb services.", noise: 20, owned: false },

@@ -4,10 +4,11 @@ import { FitAddon } from "xterm-addon-fit";
 import "xterm/css/xterm.css";
 import { getBash } from "./bash";
 import { getShellCwd, setShellCwd } from "../game/engine";
+import { store } from "../store";
 import { getCommandNames } from "just-bash/browser";
 
 const GAME_CMDS = [
-  "mail", "browser", "contracts", "accept", "submit", "scan", "probe", "connect",
+  "mail", "browser", "contracts", "accept", "submit", "scan", "probe", "connect", "pivot",
   "disconnect", "download", "decrypt", "hashcrack", "run", "tools", "evidence", "notes",
   "trace", "logclean", "map", "whois", "theme", "clear",
 ];
@@ -71,6 +72,7 @@ export function TerminalApp() {
       tab.term.write(prompt()); return;
     }
     tab.busy = true;
+    await crackAnim(tab, cmd);
     try {
       const res = await bash.exec(cmd, { cwd: getShellCwd() });
       if (res.env?.PWD) setShellCwd(res.env.PWD); // persist cd across commands
@@ -81,6 +83,32 @@ export function TerminalApp() {
     }
     tab.busy = false;
     tab.term.write(prompt());
+  }
+
+  // hashcrack/decrypt used to be instant lookups. Show a work bar whose length
+  // scales with the target's "strength" (deterministic from the argument), so they
+  // read as real effort — and the rainbow tool makes them near-instant (upgrade loop).
+  async function crackAnim(tab: Tab, cmd: string) {
+    const parts = cmd.trim().split(/\s+/);
+    const verb = parts[0];
+    if (verb !== "hashcrack" && verb !== "decrypt") return;
+    const arg = parts[1] ?? "";
+    if (!arg) return;
+    const fast = store.state.tools["rainbow"]?.owned;
+    // strength 0..1 from a cheap deterministic hash of the argument
+    let h = 0; for (const ch of arg) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    const strength = (h % 100) / 100;
+    const total = fast ? 350 : 1400 + Math.round(strength * 2200); // ms
+    const steps = 24, dt = total / steps;
+    const t = tab.term;
+    const label = verb === "hashcrack" ? "cracking" : "decrypting";
+    for (let i = 1; i <= steps; i++) {
+      const filled = Math.round((i / steps) * 20);
+      const bar = "█".repeat(filled) + "░".repeat(20 - filled);
+      t.write(`\r\x1b[38;5;244m${label} [${bar}] ${Math.round((i / steps) * 100)}%\x1b[0m`);
+      await new Promise((r) => setTimeout(r, dt));
+    }
+    t.write("\r\x1b[K"); // clear the bar line before the real output prints
   }
 
   async function complete(tab: Tab) {
